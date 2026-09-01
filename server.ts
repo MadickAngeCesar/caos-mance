@@ -42,6 +42,25 @@ const CANDIDATE_MODELS = [
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Helper to safely parse AI responses that might contain markdown blocks or extra text
+function parseAIResponse(text: string): any {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (markdownMatch) {
+      try { return JSON.parse(markdownMatch[1]); } catch (e2) {}
+    }
+    const braceMatch = text.match(/(\{|\[)[\s\S]*(\}|\])/);
+    if (braceMatch) {
+      try { return JSON.parse(braceMatch[0]); } catch (e3) {}
+    }
+    return null;
+  }
+}
+
+
 function resolveModelCandidates(preferredModel?: string): string[] {
   if (!preferredModel || preferredModel === "auto") {
     return CANDIDATE_MODELS;
@@ -154,7 +173,7 @@ app.post("/api/ai/test-key", async (req, res) => {
       },
     });
 
-    const parsed = JSON.parse(result.text || "{}");
+    const parsed = (parseAIResponse(result.text || "") || {});
     res.json({
       success: true,
       modelTested: "gemini-3.7-flash",
@@ -173,7 +192,7 @@ app.post("/api/ai/test-key", async (req, res) => {
           temperature: 0.1,
         },
       });
-      const parsed = JSON.parse(fallbackResult.text || "{}");
+      const parsed = (parseAIResponse(fallbackResult.text || "") || {});
       return res.json({
         success: true,
         modelTested: "gemini-flash-latest",
@@ -383,16 +402,9 @@ Return a STRICT JSON array matching this exact schema:
       0.3
     );
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        parsed = JSON.parse(match[0]);
-      } else {
-        throw new Error("Failed to parse Gemini prospect discovery response.");
-      }
+    let parsed = parseAIResponse(text || "");
+    if (parsed === null) {
+      throw new Error("Failed to parse Gemini prospect discovery response.");
     }
 
     const prospects = (parsed.prospects || parsed || []).map((p: any, idx: number) => ({
@@ -586,7 +598,7 @@ ${userInstruction ? `ADDITIONAL USER INSTRUCTION: ${userInstruction}` : ""}`;
       0.3
     );
 
-    const parsed = JSON.parse(text || "{}");
+    const parsed = (parseAIResponse(text || "") || {});
     res.json({
       success: true,
       data: parsed,
@@ -664,7 +676,7 @@ ${userInstruction ? `SPECIFIC INSTRUCTION: ${userInstruction}` : ""}`;
       0.5
     );
 
-    const parsed = JSON.parse(text || "{}");
+    const parsed = (parseAIResponse(text || "") || {});
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
     console.warn("AI Outreach Error, using fallback generator:", error.message || error);
@@ -728,7 +740,7 @@ ${userInstruction ? `USER INSTRUCTION: ${userInstruction}` : ""}`;
       0.4
     );
 
-    const parsed = JSON.parse(text || "{}");
+    const parsed = (parseAIResponse(text || "") || {});
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
     console.warn("AI Follow-up Error, using fallback generator:", error.message || error);
@@ -812,7 +824,7 @@ ${contentType ? `PREFERRED FORMAT: ${contentType}` : ""}`;
       0.7
     );
 
-    const parsed = JSON.parse(text || "{}");
+    const parsed = (parseAIResponse(text || "") || {});
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
     console.warn("AI Content Error, using fallback generator:", error.message || error);
@@ -906,7 +918,7 @@ ${angle ? `SPECIAL FOCUS / ANGLE: ${angle}` : ""}`;
       0.3
     );
 
-    const parsed = JSON.parse(text || "{}");
+    const parsed = (parseAIResponse(text || "") || {});
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
     console.warn("AI Proposal Error, using fallback generator:", error.message || error);
@@ -991,7 +1003,7 @@ Top Urgent Prospects: ${JSON.stringify(crmSnapshot?.topUrgent || [])}`;
       0.3
     );
 
-    const parsed = JSON.parse(text || "{}");
+    const parsed = (parseAIResponse(text || "") || {});
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
     console.warn("AI Command Error, using fallback response:", error.message || error);

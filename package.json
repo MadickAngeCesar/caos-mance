@@ -35,8 +35,7 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "icon": "public/mac_tech_logo.svg"
+      ]
     },
     "mac": {
       "target": [

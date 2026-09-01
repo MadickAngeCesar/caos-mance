@@ -9,7 +9,15 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: "10mb" }));
+app.use((req, res, next) => {
+  express.json({ limit: "10mb" })(req, res, (err) => {
+    if (err) {
+      console.error('Invalid JSON payload sent to server:', err.message);
+      return res.status(400).json({ success: false, error: 'Invalid JSON payload format.' });
+    }
+    next();
+  });
+});
 
 // Dynamic initializer for Gemini client (supporting request-specific key or env key)
 function getAIForRequest(req: express.Request): { client: GoogleGenAI | null; apiKeyUsed: boolean } {

@@ -45,7 +45,12 @@ export default function App() {
   const [isAskCaosOpen, setIsAskCaosOpen] = useState(false);
   const [askCaosPrompt, setAskCaosPrompt] = useState<string | undefined>(undefined);
   const [isDark, setIsDark] = useState<boolean>(() => {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('caos_theme');
+      if (saved) return saved === 'dark';
+      return false; // Default to clean light mode
+    }
+    return false;
   });
   const [isResearchingMap, setIsResearchingMap] = useState<Record<string, boolean>>({});
 
@@ -53,8 +58,10 @@ export default function App() {
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('caos_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('caos_theme', 'light');
     }
   }, [isDark]);
 

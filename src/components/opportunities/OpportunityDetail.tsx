@@ -301,34 +301,22 @@ export const OpportunityDetail: React.FC<OpportunityDetailProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150 pb-16">
       {/* 1. Sticky Navigation & Action Header */}
-      <div className="sticky top-0 z-30 bg-stone-50/90 dark:bg-stone-950/90 backdrop-blur-md pb-4 pt-1 border-b border-stone-200 dark:border-stone-800 -mx-4 px-4 sm:-mx-6 sm:px-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onBack}
-                className="p-1 rounded-md text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/60 dark:hover:bg-stone-800 cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Pipeline</span>
-              </button>
-              <span className="text-stone-300 dark:text-stone-700">/</span>
-              {organization && (
-                <button
-                  onClick={() => onNavigateToOrg(organization.id)}
-                  className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Building2 className="w-3 h-3" />
-                  <span>{organization.name}</span>
-                </button>
-              )}
-            </div>
+      <div className="sticky -top-6 lg:-top-8 -mt-6 lg:-mt-8 z-20 -mx-6 lg:-mx-8 px-6 lg:px-8 py-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={onBack}
+            className="p-1.5 rounded-md text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer shrink-0"
+            title="Back to Pipeline"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
 
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-100">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-stone-900 dark:text-stone-100 truncate">
                 {name || 'Untitled Opportunity'}
               </h1>
-              <span className={`text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded border ${
+              <span className={`text-xs font-mono font-bold uppercase px-2 py-0.5 rounded border ${
                 stage === 'won'
                   ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                   : stage === 'lost'
@@ -338,69 +326,85 @@ export const OpportunityDetail: React.FC<OpportunityDetailProps> = ({
                 {stage}
               </span>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setShowLogModal(true)}
-              className="px-3 py-1.5 text-xs font-medium rounded-md border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <Clock className="w-3.5 h-3.5 text-stone-400" />
-              <span>Log Activity</span>
-            </button>
-
-            <button
-              onClick={handleGenerateAIProposal}
-              disabled={isGeneratingProposal}
-              className="px-3 py-1.5 text-xs font-semibold rounded-md bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-stone-200 text-white dark:text-stone-900 flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-teal-400 dark:text-teal-600" />
-              <span>{isGeneratingProposal ? 'Generating...' : 'AI Proposal'}</span>
-            </button>
-
-            <button
-              onClick={handleSaveAll}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white dark:text-stone-950 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
-            >
-              {isSavedFlash ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-              <span>{isSavedFlash ? 'Saved!' : 'Save Changes'}</span>
-            </button>
-
-            <button
-              onClick={handleDeleteOpportunity}
-              className="p-1.5 text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md cursor-pointer transition-colors"
-              title="Delete Opportunity"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1.5 text-xs text-stone-500 mt-0.5">
+              <span>Pipeline</span>
+              {organization && (
+                <>
+                  <span className="text-stone-300 dark:text-stone-700">/</span>
+                  <button
+                    onClick={() => onNavigateToOrg(organization.id)}
+                    className="font-semibold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Building2 className="w-3 h-3" />
+                    <span className="truncate max-w-[200px]">{organization.name}</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 2. Visual Stage Stepper */}
-        <div className="mt-4 grid grid-cols-5 gap-1 bg-white dark:bg-stone-900 p-1.5 rounded-lg border border-stone-200 dark:border-stone-800 shadow-2xs">
-          {STAGES.map((s) => {
-            const isCurrent = stage === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => handleStageChange(s.id)}
-                className={`py-1.5 px-2 text-xs font-medium rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  isCurrent
-                    ? s.id === 'won'
-                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                      : s.id === 'lost'
-                      ? 'bg-stone-700 text-white font-bold shadow-xs'
-                      : 'bg-teal-600 dark:bg-teal-500 text-white dark:text-stone-950 font-bold shadow-xs'
-                    : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'
-                }`}
-              >
-                <span>{s.name}</span>
-                <span className="text-[10px] opacity-75 font-mono">({s.defaultProb}%)</span>
-              </button>
-            );
-          })}
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <button
+            onClick={() => setShowLogModal(true)}
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+          >
+            <Clock className="w-3.5 h-3.5 text-stone-400" />
+            <span>Log</span>
+          </button>
+
+          <button
+            onClick={handleGenerateAIProposal}
+            disabled={isGeneratingProposal}
+            className="px-3 py-1.5 text-xs font-semibold rounded-md bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-stone-200 text-white dark:text-stone-900 flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-teal-400 dark:text-teal-600" />
+            <span>{isGeneratingProposal ? 'Generating...' : 'Proposal'}</span>
+          </button>
+
+          <button
+            onClick={handleSaveAll}
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white dark:text-stone-950 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+          >
+            {isSavedFlash ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+            <span>{isSavedFlash ? 'Saved!' : 'Save'}</span>
+          </button>
+
+          <button
+            onClick={handleDeleteOpportunity}
+            className="p-1.5 text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md cursor-pointer transition-colors"
+            title="Delete Opportunity"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
+      </div>
+
+      {/* 2. Visual Stage Stepper */}
+      <div className="grid grid-cols-5 gap-1.5 bg-white dark:bg-stone-900 p-1.5 rounded-lg border border-stone-200 dark:border-stone-800 shadow-2xs">
+        {STAGES.map((s) => {
+          const isCurrent = stage === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => handleStageChange(s.id)}
+              className={`py-1.5 px-2 text-xs font-medium rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                isCurrent
+                  ? s.id === 'won'
+                    ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                    : s.id === 'lost'
+                    ? 'bg-stone-700 text-white font-bold shadow-xs'
+                    : 'bg-teal-600 dark:bg-teal-500 text-white dark:text-stone-950 font-bold shadow-xs'
+                  : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'
+              }`}
+            >
+              <span>{s.name}</span>
+              <span className="text-[10px] opacity-75 font-mono">({s.defaultProb}%)</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 3. Deal Overview KPIs Strip */}

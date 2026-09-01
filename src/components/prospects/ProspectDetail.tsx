@@ -156,7 +156,7 @@ export const ProspectDetail: React.FC<ProspectDetailProps> = ({
             className="px-3.5 py-1.5 rounded-md text-xs font-medium bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
           >
             <Sparkles className={`w-3.5 h-3.5 ${isResearching ? 'animate-spin' : ''}`} />
-            <span>{isResearching ? 'Researching...' : '✨ Research with Gemini'}</span>
+            <span>{isResearching ? 'Researching...' : 'Research'}</span>
           </button>
 
           {/* Generate Outreach */}
@@ -165,7 +165,7 @@ export const ProspectDetail: React.FC<ProspectDetailProps> = ({
             className="px-3.5 py-1.5 rounded-md text-xs font-medium bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Send className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-            <span>Generate Outreach</span>
+            <span>Outreach</span>
           </button>
 
           {/* Convert to Opportunity (Progressive disclosure: visible when Engaged+) */}
@@ -175,7 +175,7 @@ export const ProspectDetail: React.FC<ProspectDetailProps> = ({
               className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white dark:text-stone-950 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
             >
               <Briefcase className="w-3.5 h-3.5" />
-              <span>Convert to Opportunity</span>
+              <span>Opportunity</span>
             </button>
           )}
 

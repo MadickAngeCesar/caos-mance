@@ -77,7 +77,13 @@ export async function testGeminiApiKey(apiKey?: string): Promise<{
     headers,
     body: JSON.stringify({ apiKey }),
   });
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function requestResearch(payload: {
@@ -95,7 +101,13 @@ export async function requestResearch(payload: {
   if (!response.ok) {
     throw new Error(`Research request failed: ${response.statusText}`);
   }
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function requestOutreach(payload: {
@@ -117,7 +129,13 @@ export async function requestOutreach(payload: {
   if (!response.ok) {
     throw new Error(`Outreach draft failed: ${response.statusText}`);
   }
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function requestFollowup(payload: {
@@ -140,7 +158,13 @@ export async function requestFollowup(payload: {
   if (!response.ok) {
     throw new Error(`Follow-up draft failed: ${response.statusText}`);
   }
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function requestContentIdeas(payload: {
@@ -158,7 +182,13 @@ export async function requestContentIdeas(payload: {
   if (!response.ok) {
     throw new Error(`Content generation failed: ${response.statusText}`);
   }
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function requestProposal(payload: {
@@ -177,7 +207,13 @@ export async function requestProposal(payload: {
   if (!response.ok) {
     throw new Error(`Proposal generation failed: ${response.statusText}`);
   }
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function requestCommand(payload: {
@@ -194,7 +230,13 @@ export async function requestCommand(payload: {
   if (!response.ok) {
     throw new Error(`Command failed: ${response.statusText}`);
   }
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function fetchMapsConfig(): Promise<{
@@ -208,7 +250,13 @@ export async function fetchMapsConfig(): Promise<{
     method: 'GET',
     headers: getAIHeaders(),
   });
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export async function searchGooglePlaces(payload: {
@@ -229,7 +277,14 @@ export async function searchGooglePlaces(payload: {
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
   });
-  const data = await response.json();
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
   if (!response.ok) {
     throw new Error(data.error || `Places search failed with status ${response.status}`);
   }
@@ -263,7 +318,14 @@ export async function findProspectsWithAI(payload: {
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
   });
-  const data = await response.json();
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text.slice(0, 200));
+    throw new Error('Invalid JSON response from server');
+  }
   if (!response.ok) {
     throw new Error(data.error || `AI Prospect search failed with status ${response.status}`);
   }

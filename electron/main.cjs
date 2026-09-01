@@ -1,18 +1,23 @@
 const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 let mainWindow = null;
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '../public/mac_tech_logo.svg');
+  const hasIcon = fs.existsSync(iconPath);
+
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 880,
     minWidth: 1024,
     minHeight: 680,
     title: 'CAOS - Client Acquisition & Outreach System',
-    icon: path.join(__dirname, '../public/mac_tech_logo.svg'),
+    icon: hasIcon ? iconPath : undefined,
     backgroundColor: '#0c0a09',
+    autoHideMenuBar: true,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

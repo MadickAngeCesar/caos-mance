@@ -6,6 +6,27 @@
 export const STORAGE_KEY_GEMINI_API = 'caos_gemini_api_key';
 export const STORAGE_KEY_GEMINI_MODEL = 'caos_gemini_model_pref';
 export const STORAGE_KEY_GMAPS_API = 'caos_gmaps_api_key';
+export const STORAGE_KEY_CUSTOM_API_URL = 'caos_custom_api_url';
+
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const customUrl = localStorage.getItem(STORAGE_KEY_CUSTOM_API_URL);
+    if (customUrl && customUrl.trim() !== '') {
+      return customUrl.trim().replace(/\/+$/, '');
+    }
+    // If running in packaged Electron or file:// protocol, target local backend or custom port
+    if (window.location.protocol === 'file:' || (window as any).electronAPI?.isElectron) {
+      return 'http://localhost:3000';
+    }
+  }
+  return '';
+}
+
+export function apiUrl(endpoint: string): string {
+  const base = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return base ? `${base}${cleanEndpoint}` : cleanEndpoint;
+}
 
 export function getGoogleMapsApiKey(): string {
   if (typeof window !== 'undefined') {
@@ -51,7 +72,7 @@ export async function testGeminiApiKey(apiKey?: string): Promise<{
   error?: string;
 }> {
   const headers = getAIHeaders();
-  const response = await fetch('/api/ai/test-key', {
+  const response = await fetch(apiUrl('/api/ai/test-key'), {
     method: 'POST',
     headers,
     body: JSON.stringify({ apiKey }),
@@ -66,7 +87,7 @@ export async function requestResearch(payload: {
   userInstruction?: string;
   preferredModel?: string;
 }) {
-  const response = await fetch('/api/ai/research', {
+  const response = await fetch(apiUrl('/api/ai/research'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -88,7 +109,7 @@ export async function requestOutreach(payload: {
   userInstruction?: string;
   preferredModel?: string;
 }) {
-  const response = await fetch('/api/ai/outreach', {
+  const response = await fetch(apiUrl('/api/ai/outreach'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -111,7 +132,7 @@ export async function requestFollowup(payload: {
   userInstruction?: string;
   preferredModel?: string;
 }) {
-  const response = await fetch('/api/ai/followup', {
+  const response = await fetch(apiUrl('/api/ai/followup'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -129,7 +150,7 @@ export async function requestContentIdeas(payload: {
   count?: number;
   preferredModel?: string;
 }) {
-  const response = await fetch('/api/ai/content', {
+  const response = await fetch(apiUrl('/api/ai/content'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -148,7 +169,7 @@ export async function requestProposal(payload: {
   angle?: string;
   preferredModel?: string;
 }) {
-  const response = await fetch('/api/ai/proposal', {
+  const response = await fetch(apiUrl('/api/ai/proposal'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -165,7 +186,7 @@ export async function requestCommand(payload: {
   crmSnapshot?: any;
   preferredModel?: string;
 }) {
-  const response = await fetch('/api/ai/command', {
+  const response = await fetch(apiUrl('/api/ai/command'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -183,7 +204,7 @@ export async function fetchMapsConfig(): Promise<{
   demoKeyUrl: string;
   consoleKeyUrl: string;
 }> {
-  const response = await fetch('/api/maps/config', {
+  const response = await fetch(apiUrl('/api/maps/config'), {
     method: 'GET',
     headers: getAIHeaders(),
   });
@@ -203,7 +224,7 @@ export async function searchGooglePlaces(payload: {
   needApiKey?: boolean;
   demoKeyUrl?: string;
 }> {
-  const response = await fetch('/api/maps/places-search', {
+  const response = await fetch(apiUrl('/api/maps/places-search'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),
@@ -237,7 +258,7 @@ export async function findProspectsWithAI(payload: {
   simulated?: boolean;
   error?: string;
 }> {
-  const response = await fetch('/api/ai/find-prospects', {
+  const response = await fetch(apiUrl('/api/ai/find-prospects'), {
     method: 'POST',
     headers: getAIHeaders(),
     body: JSON.stringify(payload),

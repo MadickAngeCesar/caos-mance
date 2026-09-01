@@ -2,5 +2,7 @@
   "name": "CAOS - Client Acquisition & Outreach System",
   "description": "A quiet command operating system for client acquisition, automated lead research, personalized outreach, and pipeline conversion.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

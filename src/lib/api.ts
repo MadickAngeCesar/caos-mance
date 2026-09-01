@@ -82,6 +82,10 @@ export async function testGeminiApiKey(apiKey?: string): Promise<{
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -106,6 +110,10 @@ export async function requestResearch(payload: {
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -134,6 +142,10 @@ export async function requestOutreach(payload: {
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -163,6 +175,10 @@ export async function requestFollowup(payload: {
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -187,6 +203,10 @@ export async function requestContentIdeas(payload: {
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -212,6 +232,10 @@ export async function requestProposal(payload: {
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -235,6 +259,10 @@ export async function requestCommand(payload: {
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -255,6 +283,10 @@ export async function fetchMapsConfig(): Promise<{
     return JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    // Check if the response is actually a 404 HTML page or something like "The page could not be found"
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
 }
@@ -283,6 +315,9 @@ export async function searchGooglePlaces(payload: {
     data = JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
   if (!response.ok) {
@@ -324,6 +359,9 @@ export async function findProspectsWithAI(payload: {
     data = JSON.parse(text);
   } catch (err) {
     console.error('Failed to parse JSON response:', text.slice(0, 200));
+    if (text.includes('The page could not be found') || response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error('Invalid JSON response from server');
   }
   if (!response.ok) {

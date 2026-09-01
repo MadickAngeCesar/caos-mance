@@ -15,11 +15,14 @@ import {
   Building2,
   ChevronRight,
   ExternalLink,
-  Layers
+  Layers,
+  Compass,
+  MapPin
 } from 'lucide-react';
 import { Organization, CustomFieldDefinition } from '../../types';
 import { StageBadge, PriorityBadge } from '../ui/Badge';
 import { CustomFieldRenderer } from '../ui/CustomFieldRenderer';
+import { ProspectDiscoveryModal } from './ProspectDiscoveryModal';
 
 interface ProspectListProps {
   organizations: Organization[];
@@ -52,6 +55,7 @@ export const ProspectList: React.FC<ProspectListProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(initialCreateOpen);
+  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
 
   // New Organization Form State
   const [newOrgName, setNewOrgName] = useState('');
@@ -173,6 +177,14 @@ export const ProspectList: React.FC<ProspectListProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowDiscoveryModal(true)}
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/40 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+          >
+            <Compass className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>Find Prospects (Maps & AI)</span>
+          </button>
+
           <button
             onClick={handleExportCsv}
             className="px-3 py-1.5 text-xs font-medium rounded-md border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
@@ -558,6 +570,18 @@ export const ProspectList: React.FC<ProspectListProps> = ({
           </div>
         </div>
       )}
+
+      {/* Discovery Modal (Google Maps & Gemini) */}
+      <ProspectDiscoveryModal
+        isOpen={showDiscoveryModal}
+        onClose={() => setShowDiscoveryModal(false)}
+        existingOrganizations={organizations}
+        onImportProspects={(prospectsToImport, autoResearch) => {
+          prospectsToImport.forEach((p) => {
+            onAddOrg(p);
+          });
+        }}
+      />
     </div>
   );
 };

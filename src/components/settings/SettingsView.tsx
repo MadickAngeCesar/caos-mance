@@ -19,12 +19,20 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  MapPin,
+  Compass
 } from 'lucide-react';
 import { AppStoreState, resetStoreToSeed } from '../../lib/storage';
 import { CustomFieldDefinition, Playbook, FreelanceProfile } from '../../types';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { STORAGE_KEY_GEMINI_API, STORAGE_KEY_GEMINI_MODEL, testGeminiApiKey } from '../../lib/api';
+import { 
+  STORAGE_KEY_GEMINI_API, 
+  STORAGE_KEY_GEMINI_MODEL, 
+  STORAGE_KEY_GMAPS_API, 
+  testGeminiApiKey,
+  getGoogleMapsApiKey
+} from '../../lib/api';
 
 interface SettingsViewProps {
   state: AppStoreState;
@@ -58,14 +66,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     model?: string;
   }>({ tested: false });
 
+  // Google Maps Key State
+  const [gmapsApiKey, setGmapsApiKey] = useState('');
+  const [showGmapsKey, setShowGmapsKey] = useState(false);
+  const [gmapsSavedNotice, setGmapsSavedNotice] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedKey = localStorage.getItem(STORAGE_KEY_GEMINI_API) || '';
       setUserApiKey(savedKey);
       const savedModel = localStorage.getItem(STORAGE_KEY_GEMINI_MODEL) || 'auto';
       setModelPref(savedModel);
+      const savedGmaps = localStorage.getItem(STORAGE_KEY_GMAPS_API) || '';
+      setGmapsApiKey(savedGmaps);
     }
   }, []);
+
+  const handleSaveGmapsKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      if (gmapsApiKey.trim()) {
+        localStorage.setItem(STORAGE_KEY_GMAPS_API, gmapsApiKey.trim());
+      } else {
+        localStorage.removeItem(STORAGE_KEY_GMAPS_API);
+      }
+    }
+    setGmapsSavedNotice('Google Maps Platform configuration updated.');
+    setTimeout(() => setGmapsSavedNotice(null), 3000);
+  };
+
+  const handleClearGmapsKey = () => {
+    setGmapsApiKey('');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY_GMAPS_API);
+    }
+    setGmapsSavedNotice('Google Maps key cleared.');
+    setTimeout(() => setGmapsSavedNotice(null), 3000);
+  };
 
   const handleSaveAIConfig = (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,10 +345,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   onChange={(e) => setModelPref(e.target.value)}
                   className="w-full px-3 py-2 rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-hidden"
                 >
-                  <option value="auto">Auto (Recommended - Best Available / Free-Tier Safe)</option>
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Modern, High Speed, Generous Free Quota)</option>
-                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Ultra-fast, Real-time Operations)</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy High RPM Tier)</option>
+                  <option value="auto">Auto (Recommended - Gemini 3.7 Flash & Fallbacks)</option>
+                  <option value="gemini-3.7-flash">Gemini 3.7 Flash (Default - High Speed & Deep Reasoning)</option>
+                  <option value="gemini-3.6-flash">Gemini 3.6 Flash (High Performance)</option>
+                  <option value="gemini-flash-latest">Gemini Flash Latest</option>
+                  <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Ultra-Low Latency)</option>
                 </select>
                 <div className="mt-2 p-2.5 rounded-md bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 text-[11px] text-stone-600 dark:text-stone-400 space-y-1">
                   <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
@@ -319,7 +357,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <span>How Auto-Selection works:</span>
                   </div>
                   <p>
-                    CAOS queries Gemini 2.5 Flash first for peak research & copywriting quality. If rate-limits or quota restrictions are detected on a free-tier key, it gracefully cascades down to alternative models so your workflow never gets interrupted.
+                    CAOS queries Gemini 3.7 Flash first for peak research & copywriting quality. If rate-limits or quota restrictions are detected on a free-tier key, it gracefully cascades down to alternative models so your workflow never gets interrupted.
                   </p>
                 </div>
               </div>
@@ -378,6 +416,92 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     className="text-xs text-stone-500 hover:text-red-600 dark:hover:text-red-400 underline ml-auto cursor-pointer"
                   >
                     Clear Custom Key
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Google Maps Platform Configuration Card */}
+          <div className="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 p-6 shadow-xs space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <span>Google Maps Platform Integration</span>
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                  Enables live territory scanning, interactive maps, and Google Places (New) prospect discovery.
+                </p>
+              </div>
+              <a
+                href="https://mapsplatform.google.com/maps-demo-key?utm_campaign=gmp_mcp_codeassist_v1_aistudio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 text-xs font-medium rounded-md bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1 hover:bg-teal-100 transition-colors shrink-0"
+              >
+                <span>Free Demo Key</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <form onSubmit={handleSaveGmapsKey} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
+                  Google Maps API Key (or Demo Key)
+                </label>
+                <div className="relative">
+                  <input
+                    type={showGmapsKey ? 'text' : 'password'}
+                    value={gmapsApiKey}
+                    onChange={(e) => setGmapsApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full px-3 py-2 pr-10 rounded-md border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 text-xs font-mono focus:ring-1 focus:ring-teal-500 focus:outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGmapsKey(!showGmapsKey)}
+                    className="absolute right-2.5 top-2.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer"
+                  >
+                    {showGmapsKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-stone-500 mt-1">
+                  <span>For prototyping without billing, use the Google Maps Demo Key.</span>
+                  <a
+                    href="https://console.cloud.google.com/google/maps-apis/credentials?utm_campaign=gmp_mcp_codeassist_v1_aistudio"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-0.5"
+                  >
+                    <span>Google Cloud Console</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              </div>
+
+              {gmapsSavedNotice && (
+                <div className="p-3 rounded-md border text-xs flex items-center gap-2 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
+                  <span>{gmapsSavedNotice}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-semibold rounded-md bg-teal-600 hover:bg-teal-700 text-white shadow-xs cursor-pointer transition-colors"
+                >
+                  Save Maps Configuration
+                </button>
+
+                {gmapsApiKey && (
+                  <button
+                    type="button"
+                    onClick={handleClearGmapsKey}
+                    className="text-xs text-stone-500 hover:text-red-600 dark:hover:text-red-400 underline ml-auto cursor-pointer"
+                  >
+                    Clear Maps Key
                   </button>
                 )}
               </div>

@@ -125,6 +125,11 @@ export interface Organization {
   lastContactDate?: string;
   tags?: string[];
   notes?: string;
+  latitude?: number;
+  longitude?: number;
+  googlePlaceId?: string;
+  rating?: number;
+  userRatingsTotal?: number;
   customFields?: Record<string, any>;
   digitalizationProfile?: DigitalizationProfile;
   latestResearch?: ResearchResult;
@@ -132,6 +137,31 @@ export interface Organization {
   deletedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DiscoveredProspect {
+  id: string;
+  name: string;
+  organizationType?: string;
+  industry?: string;
+  city?: string;
+  country?: string;
+  address?: string;
+  website?: string;
+  phone?: string;
+  rating?: number;
+  userRatingsTotal?: number;
+  googlePlaceId?: string;
+  latitude?: number;
+  longitude?: number;
+  source: 'google_maps' | 'gemini' | 'hybrid';
+  estimatedSize?: string;
+  currentDigitalState?: string;
+  keyPainPoints?: string[];
+  recommendedAngle?: string;
+  estimatedLeadScore?: number;
+  suggestedNextStep?: string;
+  isExisting?: boolean;
 }
 
 export interface Opportunity {

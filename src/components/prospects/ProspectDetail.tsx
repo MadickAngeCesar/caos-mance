@@ -18,7 +18,8 @@ import {
   MoreVertical,
   Trash2,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  Star
 } from 'lucide-react';
 import { Organization, Contact, CustomFieldDefinition, Activity } from '../../types';
 import { StageBadge, PriorityBadge } from '../ui/Badge';
@@ -27,6 +28,8 @@ import { ResearchResultView } from './ResearchResultView';
 import { DigitalizationModal } from './DigitalizationModal';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { getGoogleMapsApiKey } from '../../lib/api';
 
 interface ProspectDetailProps {
   organization: Organization;
@@ -301,6 +304,78 @@ export const ProspectDetail: React.FC<ProspectDetailProps> = ({
                   className="w-full mt-1 px-3 py-1.5 text-xs rounded border border-stone-200 dark:border-stone-700 bg-stone-50/50 dark:bg-stone-800 text-stone-900 dark:text-stone-100"
                 />
               </div>
+
+              {/* Geographic Coordinates & Location Map */}
+              {(organization.latitude && organization.longitude) ? (
+                <div className="pt-2 border-t border-stone-100 dark:border-stone-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span>Verified Location</span>
+                    </span>
+                    {organization.rating && (
+                      <span className="flex items-center gap-1 text-[11px] text-amber-600">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold">{organization.rating}</span>
+                        {organization.userRatingsTotal && (
+                          <span className="text-stone-400">({organization.userRatingsTotal})</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {getGoogleMapsApiKey() ? (
+                    <div className="h-36 w-full rounded-md overflow-hidden border border-stone-200 dark:border-stone-700 relative">
+                      <APIProvider apiKey={getGoogleMapsApiKey()}>
+                        <Map
+                          center={{ lat: organization.latitude, lng: organization.longitude }}
+                          zoom={14}
+                          internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                          style={{ height: '100%', width: '100%' }}
+                          gestureHandling="cooperative"
+                          disableDefaultUI={true}
+                        >
+                          <AdvancedMarker position={{ lat: organization.latitude, lng: organization.longitude }}>
+                            <Pin background="#0d9488" borderColor="#ffffff" glyphColor="#ffffff" />
+                          </AdvancedMarker>
+                        </Map>
+                      </APIProvider>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-md bg-stone-50 dark:bg-stone-800/70 border border-stone-200 dark:border-stone-700/80 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 truncate">
+                        <div className="w-7 h-7 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center text-teal-700 dark:text-teal-300 shrink-0">
+                          <MapPin className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="truncate">
+                          <div className="font-mono text-[11px] text-stone-700 dark:text-stone-300">
+                            {organization.latitude.toFixed(4)}°, {organization.longitude.toFixed(4)}°
+                          </div>
+                          {organization.address && (
+                            <div className="text-[11px] text-stone-500 truncate">{organization.address}</div>
+                          )}
+                        </div>
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          organization.name + ' ' + (organization.address || organization.city || '')
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 text-[11px] font-medium rounded bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 shrink-0 flex items-center gap-1"
+                      >
+                        <span>Open Maps</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  )}
+                  {getGoogleMapsApiKey() && organization.address && (
+                    <p className="text-[11px] text-stone-500 truncate">
+                      {organization.address}
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
 

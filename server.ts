@@ -30,9 +30,10 @@ function getAIForRequest(req: express.Request): { client: GoogleGenAI | null; ap
 
 // Model fallback cascade optimized for free-tier credits & reliability
 const CANDIDATE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-flash-latest",
+  "gemini-3.1-flash-lite",
 ];
 
 async function generateWithBestModel(
@@ -80,7 +81,7 @@ app.get("/api/health", (req, res) => {
     status: "ok", 
     aiConfigured: hasEnvKey || (!!customKey && customKey.trim() !== ""),
     envConfigured: hasEnvKey,
-    defaultRecommendedModel: "gemini-2.5-flash"
+    defaultRecommendedModel: "gemini-3.7-flash"
   });
 });
 
@@ -96,7 +97,7 @@ app.post("/api/ai/test-key", async (req, res) => {
   try {
     const testAi = new GoogleGenAI({ apiKey: keyToTest.trim() });
     const result = await testAi.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.7-flash",
       contents: "Respond with strict JSON: {\"status\": \"ok\", \"message\": \"API Key Validated\"}",
       config: {
         responseMimeType: "application/json",
@@ -107,16 +108,16 @@ app.post("/api/ai/test-key", async (req, res) => {
     const parsed = JSON.parse(result.text || "{}");
     res.json({
       success: true,
-      modelTested: "gemini-2.5-flash",
+      modelTested: "gemini-3.7-flash",
       message: "API Key is active and operational for free-tier and standard operations.",
       details: parsed,
     });
   } catch (error: any) {
-    // Try fallback to gemini-2.0-flash or gemini-1.5-flash
+    // Try fallback to gemini-3.6-flash or gemini-flash-latest
     try {
       const testAi = new GoogleGenAI({ apiKey: keyToTest.trim() });
       const fallbackResult = await testAi.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-flash-latest",
         contents: "Respond with strict JSON: {\"status\": \"ok\", \"message\": \"API Key Validated on Fallback\"}",
         config: {
           responseMimeType: "application/json",
@@ -126,8 +127,8 @@ app.post("/api/ai/test-key", async (req, res) => {
       const parsed = JSON.parse(fallbackResult.text || "{}");
       return res.json({
         success: true,
-        modelTested: "gemini-1.5-flash",
-        message: "API Key validated successfully on high-rate-limit fallback model (Gemini 1.5 Flash).",
+        modelTested: "gemini-flash-latest",
+        message: "API Key validated successfully on fallback model (Gemini Flash Latest).",
         details: parsed,
       });
     } catch (fallbackError: any) {
@@ -139,7 +140,344 @@ app.post("/api/ai/test-key", async (req, res) => {
   }
 });
 
-// 2. AI Research with Gemini
+// Google Maps Platform Config & Status
+app.get("/api/maps/config", (req, res) => {
+  const customKey = req.headers["x-google-maps-api-key"] as string;
+  const envKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY;
+  const activeKey = (customKey && customKey.trim()) || (envKey && envKey.trim()) || "";
+  
+  res.json({
+    status: "ok",
+    hasKey: !!activeKey,
+    isEnvConfigured: !!envKey,
+    demoKeyUrl: "https://mapsplatform.google.com/maps-demo-key?utm_campaign=gmp_mcp_codeassist_v1_aistudio",
+    consoleKeyUrl: "https://console.cloud.google.com/google/maps-apis/credentials?utm_campaign=gmp_mcp_codeassist_v1_aistudio",
+  });
+});
+
+// Google Places API (New) Text Search Proxy (CORS-safe server-side proxy)
+app.post("/api/maps/places-search", async (req, res) => {
+  try {
+    const { query, locationBias, pageSize = 10, languageCode = "en" } = req.body;
+    const customKey = req.headers["x-google-maps-api-key"] as string;
+    const apiKey = (customKey && customKey.trim()) || process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY;
+
+    if (!query || typeof query !== "string" || !query.trim()) {
+      return res.status(400).json({ error: "Missing required 'query' parameter." });
+    }
+
+    if (!apiKey) {
+      return res.status(400).json({ 
+        error: "Google Maps API Key is not configured. Please add your Google Maps API Key or free Maps Demo Key in Settings.",
+        needApiKey: true,
+        demoKeyUrl: "https://mapsplatform.google.com/maps-demo-key?utm_campaign=gmp_mcp_codeassist_v1_aistudio"
+      });
+    }
+
+    const payload: Record<string, any> = {
+      textQuery: query.trim(),
+      pageSize: Math.min(Math.max(pageSize, 1), 20),
+      languageCode,
+    };
+
+    if (locationBias && locationBias.latitude && locationBias.longitude) {
+      payload.locationBias = {
+        circle: {
+          center: {
+            latitude: locationBias.latitude,
+            longitude: locationBias.longitude,
+          },
+          radius: locationBias.radius || 15000.0,
+        },
+      };
+    }
+
+    const gmapsResponse = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey.trim(),
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.primaryType,places.types,places.regularOpeningHours,places.businessStatus",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!gmapsResponse.ok) {
+      const errorText = await gmapsResponse.text();
+      console.error("Google Places API error:", gmapsResponse.status, errorText);
+      return res.status(gmapsResponse.status).json({ 
+        error: `Google Places API returned status ${gmapsResponse.status}`,
+        details: errorText,
+      });
+    }
+
+    const data = await gmapsResponse.json();
+    const places = (data.places || []).map((p: any) => ({
+      id: p.id || `gplace_${Math.random().toString(36).slice(2, 9)}`,
+      name: p.displayName?.text || "Unknown Organization",
+      address: p.formattedAddress || "",
+      latitude: p.location?.latitude,
+      longitude: p.location?.longitude,
+      rating: p.rating || null,
+      userRatingsTotal: p.userRatingCount || 0,
+      website: p.websiteUri || "",
+      phone: p.nationalPhoneNumber || "",
+      primaryType: p.primaryType || (p.types && p.types[0]) || "Business",
+      types: p.types || [],
+      googlePlaceId: p.id,
+      openNow: p.regularOpeningHours?.openNow ?? null,
+      businessStatus: p.businessStatus || "OPERATIONAL",
+    }));
+
+    return res.json({
+      success: true,
+      places,
+      count: places.length,
+    });
+  } catch (error: any) {
+    console.error("Error proxying Google Places search:", error);
+    return res.status(500).json({ error: error.message || "Internal server error during Places search." });
+  }
+});
+
+// Gemini Market Prospector & Smart Sourcing (Taking User Inputs)
+app.post("/api/ai/find-prospects", async (req, res) => {
+  try {
+    const { 
+      industry, 
+      city, 
+      country = "Cameroon", 
+      searchQuery, 
+      organizationType, 
+      specificCriteria, 
+      targetPainPoints,
+      targetSize,
+      quantity = 6,
+      includeDigitalAudit = true,
+      profile,
+      preferredModel
+    } = req.body;
+
+    const { client: ai } = getAIForRequest(req);
+
+    if (!ai) {
+      // Return structured contextual fallback records based on inputs
+      const fallbackList = generateSimulatedProspectDiscovery({
+        industry: industry || "Technology & Services",
+        city: city || "Yaounde",
+        country: country || "Cameroon",
+        searchQuery: searchQuery || "Local business",
+        organizationType: organizationType || "Private Organization",
+        quantity: quantity || 5,
+      });
+      return res.json({
+        success: true,
+        prospects: fallbackList,
+        simulated: true,
+        model: "offline-fallback",
+      });
+    }
+
+    const systemInstruction = `You are an elite B2B Market Researcher and Client Acquisition Specialist.
+Your task is to identify and source realistic, high-potential target organizations for a digital transformation & software consultancy (such as MAC TECH).
+
+THE USER'S EXACT INPUTS:
+- Target Industry/Sector: ${industry || "Any relevant industry"}
+- Target City & Country: ${city ? `${city}, ` : ""}${country}
+- User Search Query / Focus: ${searchQuery || "Organizations needing software, automation, and modern portals"}
+- Target Organization Type: ${organizationType || "Private or Public Institution"}
+- Specific Criteria / Requirements: ${specificCriteria || "Established organization with growth capacity"}
+- Target Digital Pain Points: ${targetPainPoints || "Manual paper-based processes, outdated websites, disconnected legacy software"}
+- Target Organization Size: ${targetSize || "Medium to Large (30-500+ staff)"}
+- Consultant Profile Services: ${profile?.coreServices ? profile.coreServices.join(", ") : "Custom Software, Web Portals, Cloud Integration, Workflow Automation"}
+
+You must generate exactly ${Math.min(Math.max(quantity, 1), 12)} realistic, high-probability prospect candidates tailored strictly to the user's inputs.
+If the location is specific (e.g. Douala, Yaounde, Nairobi, Lagos, Paris, etc.), use authentic, recognizable institutional structures and real-world geographic coordinates (approximate latitude/longitude) for that city.
+
+Return a STRICT JSON array matching this exact schema:
+{
+  "prospects": [
+    {
+      "name": "Organization Name",
+      "organizationType": "e.g. Private University, Referral Hospital, Freight Brokerage, Law Firm",
+      "industry": "Specific Sector",
+      "city": "${city || "City"}",
+      "country": "${country}",
+      "address": "Realistic Street Address or District",
+      "website": "https://www.example.org",
+      "phone": "+237 ... or realistic local format",
+      "rating": 4.2,
+      "userRatingsTotal": 48,
+      "estimatedSize": "e.g. 150-300 employees, 2,500 students",
+      "currentDigitalState": "Brief 1-2 sentence description of their current tech posture",
+      "keyPainPoints": [
+        "Specific operational pain point 1",
+        "Specific operational pain point 2",
+        "Specific operational pain point 3"
+      ],
+      "recommendedAngle": "Specific pitch angle tailored to this prospect and the consultant's capabilities",
+      "estimatedLeadScore": 82,
+      "suggestedNextStep": "Specific outreach step",
+      "latitude": 3.8480,
+      "longitude": 11.5021
+    }
+  ]
+}`;
+
+    const prompt = `Generate ${quantity} prospective client organizations based strictly on the user criteria. Return strictly valid JSON.`;
+
+    const { text, modelUsed, fallbackOccurred } = await generateWithBestModel(
+      ai,
+      prompt,
+      systemInstruction,
+      preferredModel,
+      0.3
+    );
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      } else {
+        throw new Error("Failed to parse Gemini prospect discovery response.");
+      }
+    }
+
+    const prospects = (parsed.prospects || parsed || []).map((p: any, idx: number) => ({
+      id: `disc_ai_${Date.now()}_${idx}`,
+      name: p.name || `Discovered Lead ${idx + 1}`,
+      organizationType: p.organizationType || organizationType || "Organization",
+      industry: p.industry || industry || "General",
+      city: p.city || city || "Yaounde",
+      country: p.country || country || "Cameroon",
+      address: p.address || `${p.city || city || "Central"}, ${p.country || country}`,
+      website: p.website || "",
+      phone: p.phone || "",
+      rating: p.rating || 4.1,
+      userRatingsTotal: p.userRatingsTotal || 35,
+      estimatedSize: p.estimatedSize || "50-200 employees",
+      currentDigitalState: p.currentDigitalState || "Basic web presence with manual internal workflows.",
+      keyPainPoints: p.keyPainPoints || ["Disjointed spreadsheets", "Manual records processing", "Lack of real-time client visibility"],
+      recommendedAngle: p.recommendedAngle || "Offer modern portal modernization with automated registration.",
+      estimatedLeadScore: p.estimatedLeadScore || Math.floor(70 + Math.random() * 25),
+      suggestedNextStep: p.suggestedNextStep || "Initiate consultative outreach to Director of IT / Managing Partner.",
+      latitude: p.latitude || undefined,
+      longitude: p.longitude || undefined,
+      source: "gemini" as const,
+    }));
+
+    return res.json({
+      success: true,
+      prospects,
+      count: prospects.length,
+      model: modelUsed,
+      fallbackOccurred,
+    });
+  } catch (error: any) {
+    console.error("Error finding prospects with Gemini:", error);
+    return res.status(500).json({ error: error.message || "Failed to search prospects with Gemini." });
+  }
+});
+
+// Helper for simulated fallback prospects when offline
+function generateSimulatedProspectDiscovery(params: {
+  industry: string;
+  city: string;
+  country: string;
+  searchQuery: string;
+  organizationType: string;
+  quantity: number;
+}) {
+  const city = params.city || "Yaounde";
+  const country = params.country || "Cameroon";
+  const ind = params.industry || "Higher Education";
+  
+  // Coordinate anchors
+  const isYaounde = city.toLowerCase().includes("yaound");
+  const isDouala = city.toLowerCase().includes("douala");
+  const baseLat = isYaounde ? 3.848 : isDouala ? 4.051 : 3.86;
+  const baseLng = isYaounde ? 11.502 : isDouala ? 9.767 : 11.52;
+
+  const samples = [
+    {
+      name: `Institut Supérieur de Technologie et Management de ${city}`,
+      orgType: "Private Higher Education Institute",
+      address: `Quartier Bastos, ${city}`,
+      lat: baseLat + 0.012,
+      lng: baseLng + 0.008,
+      leadScore: 88,
+      painPoints: ["Paper-based admission queues", "Manual tuition payment reconciliation", "Outdated website lacking student portal"],
+      angle: "Position a turnkey Cloud Student Portal reducing admission turnaround by 70%.",
+    },
+    {
+      name: `Clinique Médico-Chirurgicale de l'Espoir ${city}`,
+      orgType: "Private Healthcare Clinic",
+      address: `Avenue Kennedy, ${city}`,
+      lat: baseLat - 0.009,
+      lng: baseLng - 0.011,
+      leadScore: 84,
+      painPoints: ["Fragmented physical patient files", "Appointment scheduling via WhatsApp only", "No digitized lab result dispatch"],
+      angle: "Propose an integrated Clinic EMR & Patient Scheduling system.",
+    },
+    {
+      name: `Afrik Logistics & Freight Solutions ${city}`,
+      orgType: "Logistics & Supply Chain",
+      address: `Zone Industrielle Bassa, ${city}`,
+      lat: baseLat + 0.018,
+      lng: baseLng - 0.015,
+      leadScore: 81,
+      painPoints: ["Manual Excel tracking for cargo clearance", "No client self-service tracking portal", "Slow invoice dispatch"],
+      angle: "Deploy a custom real-time shipment milestone dashboard for B2B cargo clients.",
+    },
+    {
+      name: `Cabinet Juridique & Fiscal Associés`,
+      orgType: "Corporate Law Firm",
+      address: `Boulevard de la Liberté, ${city}`,
+      lat: baseLat - 0.015,
+      lng: baseLng + 0.005,
+      leadScore: 76,
+      painPoints: ["Unencrypted client file storage", "Manual billable hours tracking", "No client case progress portal"],
+      angle: "Deliver a secure, role-based Client Legal Vault and automated time-tracking suite.",
+    },
+    {
+      name: `Complexe Scolaire Bilingue Les Étoiles`,
+      orgType: "Private Secondary School Network",
+      address: `Omnisports, ${city}`,
+      lat: baseLat + 0.005,
+      lng: baseLng + 0.019,
+      leadScore: 79,
+      painPoints: ["Printed report cards causing semester delays", "Cash-in-hand tuition collection risks", "No parent SMS/Email notification system"],
+      angle: "Implement an automated School Information System with instant parent SMS alerts and mobile money fee payment.",
+    },
+  ];
+
+  return samples.slice(0, Math.min(params.quantity, samples.length)).map((s, idx) => ({
+    id: `disc_sim_${Date.now()}_${idx}`,
+    name: s.name,
+    organizationType: s.orgType,
+    industry: ind,
+    city,
+    country,
+    address: s.address,
+    website: `https://www.${s.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.cm`,
+    phone: `+237 6${Math.floor(70000000 + Math.random() * 20000000)}`,
+    rating: 4.2 + (idx * 0.1),
+    userRatingsTotal: 25 + idx * 14,
+    estimatedSize: "50-250 staff",
+    currentDigitalState: "Traditional infrastructure with emerging desire for digitization.",
+    keyPainPoints: s.painPoints,
+    recommendedAngle: s.angle,
+    estimatedLeadScore: s.leadScore,
+    suggestedNextStep: "Send personalized cold email addressing specific operational pain point.",
+    latitude: s.lat,
+    longitude: s.lng,
+    source: "gemini" as const,
+  }));
+}
+
 app.post("/api/ai/research", async (req, res) => {
   try {
     const { organization, profile, playbook, userInstruction, preferredModel } = req.body;

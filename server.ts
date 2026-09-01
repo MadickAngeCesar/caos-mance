@@ -28,13 +28,39 @@ function getAIForRequest(req: express.Request): { client: GoogleGenAI | null; ap
   return { client, apiKeyUsed: true };
 }
 
-// Model fallback cascade optimized for free-tier credits & reliability
+// Model fallback cascade optimized for free-tier credits, performance, & reliability
 const CANDIDATE_MODELS = [
   "gemini-3.7-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash-lite",
+  "gemini-3-flash-live",
+  "gemini-3.1-flash-live-preview",
   "gemini-3.6-flash",
   "gemini-flash-latest",
-  "gemini-3.1-flash-lite",
 ];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function resolveModelCandidates(preferredModel?: string): string[] {
+  if (!preferredModel || preferredModel === "auto") {
+    return CANDIDATE_MODELS;
+  }
+  
+  const aliases: Record<string, string[]> = {
+    "gemini-2.5-flash-lite": ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+    "gemini-3.1-flash-lite": ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-flash-latest"],
+    "gemini-3.5-flash-lite": ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.7-flash", "gemini-flash-latest"],
+    "gemini-3-flash-live": ["gemini-3-flash-live", "gemini-3.1-flash-live-preview", "gemini-3.7-flash", "gemini-3.1-flash-lite"],
+    "gemini-3.7-flash": ["gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+    "gemini-3.6-flash": ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest"],
+    "gemini-flash-latest": ["gemini-flash-latest", "gemini-3.7-flash", "gemini-3.1-flash-lite"],
+  };
+
+  const primaryChain = aliases[preferredModel] || [preferredModel];
+  const fullChain = [...new Set([...primaryChain, ...CANDIDATE_MODELS])];
+  return fullChain;
+}
 
 async function generateWithBestModel(
   ai: GoogleGenAI,
@@ -43,9 +69,7 @@ async function generateWithBestModel(
   preferredModel?: string,
   temperature: number = 0.4
 ): Promise<{ text: string; modelUsed: string; fallbackOccurred: boolean }> {
-  const modelList = preferredModel && preferredModel !== "auto"
-    ? [preferredModel, ...CANDIDATE_MODELS.filter((m) => m !== preferredModel)]
-    : CANDIDATE_MODELS;
+  const modelList = resolveModelCandidates(preferredModel);
 
   let lastError: any = null;
   for (let i = 0; i < modelList.length; i++) {
@@ -66,22 +90,47 @@ async function generateWithBestModel(
         fallbackOccurred: i > 0,
       };
     } catch (err: any) {
-      console.warn(`Model attempt ${model} failed, trying next candidate:`, err.message || err);
+      const errMsg = (err.message || String(err)).toLowerCase();
+      console.warn(`[AI Engine] Attempt with ${model} failed (${errMsg.slice(0, 100)}). Falling back to next model...`);
       lastError = err;
+
+      // If rate limited (HTTP 429 / RESOURCE_EXHAUSTED), apply small backoff before next lighter candidate
+      if (errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("exhausted") || errMsg.includes("rate")) {
+        await sleep(500);
+      }
     }
   }
   throw lastError || new Error("All candidate Gemini models failed to respond.");
 }
 
-// 1. Health check & status
+// 1. Health check & environment status
 app.get("/api/health", (req, res) => {
   const customKey = req.headers["x-gemini-api-key"] as string;
-  const hasEnvKey = !!process.env.GEMINI_API_KEY;
+  const customMapsKey = req.headers["x-google-maps-api-key"] as string;
+  const hasEnvGemini = !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "");
+  const hasEnvMaps = !!((process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY.trim() !== "") || (process.env.VITE_GOOGLE_MAPS_API_KEY && process.env.VITE_GOOGLE_MAPS_API_KEY.trim() !== ""));
+
   res.json({ 
     status: "ok", 
-    aiConfigured: hasEnvKey || (!!customKey && customKey.trim() !== ""),
-    envConfigured: hasEnvKey,
+    aiConfigured: hasEnvGemini || (!!customKey && customKey.trim() !== ""),
+    envConfigured: hasEnvGemini,
+    hasMapsKey: hasEnvMaps || (!!customMapsKey && customMapsKey.trim() !== ""),
+    appUrl: process.env.APP_URL || "",
+    nodeEnv: process.env.NODE_ENV || "development",
     defaultRecommendedModel: "gemini-3.7-flash"
+  });
+});
+
+app.get("/api/config", (req, res) => {
+  const hasEnvGemini = !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "");
+  const hasEnvMaps = !!((process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY.trim() !== "") || (process.env.VITE_GOOGLE_MAPS_API_KEY && process.env.VITE_GOOGLE_MAPS_API_KEY.trim() !== ""));
+
+  res.json({
+    geminiConfigured: hasEnvGemini,
+    mapsConfigured: hasEnvMaps,
+    appUrl: process.env.APP_URL || "",
+    nodeEnv: process.env.NODE_ENV || "development",
+    port: PORT,
   });
 });
 
@@ -545,8 +594,14 @@ ${userInstruction ? `ADDITIONAL USER INSTRUCTION: ${userInstruction}` : ""}`;
       fallbackOccurred,
     });
   } catch (error: any) {
-    console.error("AI Research Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to generate research" });
+    console.warn("AI Research Error, using high-fidelity fallback generator:", error.message || error);
+    return res.json({
+      success: true,
+      data: generateSimulatedResearch(req.body.organization || {}),
+      simulated: true,
+      model: "free-tier-resilience-fallback",
+      fallbackNotice: "Generated structured research via local engine (API rate limit or network pause).",
+    });
   }
 });
 
@@ -612,8 +667,20 @@ ${userInstruction ? `SPECIFIC INSTRUCTION: ${userInstruction}` : ""}`;
     const parsed = JSON.parse(text || "{}");
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
-    console.error("AI Outreach Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to generate outreach" });
+    console.warn("AI Outreach Error, using fallback generator:", error.message || error);
+    const org = req.body.organization;
+    const cont = req.body.contact;
+    const ch = req.body.channel || "email";
+    return res.json({
+      success: true,
+      data: {
+        subject: ch === "email" ? `Modernizing digital infrastructure at ${org?.name || "your organization"}` : undefined,
+        body: `Hi ${cont?.name || "there"},\n\nI was reviewing the operational workflows at ${org?.name || "your organization"} in ${org?.city || "your area"} and noticed opportunities to streamline core systems.\n\nI develop robust, customized web systems for growing institutions. Would you be open to a 10-minute discovery call next week to see how we could eliminate manual process delays?`,
+        channel: ch,
+      },
+      simulated: true,
+      model: "free-tier-resilience-fallback",
+    });
   }
 });
 
@@ -664,8 +731,19 @@ ${userInstruction ? `USER INSTRUCTION: ${userInstruction}` : ""}`;
     const parsed = JSON.parse(text || "{}");
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
-    console.error("AI Follow-up Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to generate follow-up" });
+    console.warn("AI Follow-up Error, using fallback generator:", error.message || error);
+    const org = req.body.organization;
+    const cont = req.body.contact;
+    const ch = req.body.channel || "email";
+    return res.json({
+      success: true,
+      data: {
+        subject: ch === "email" ? `Quick follow-up regarding ${org?.name || "our discussion"}` : undefined,
+        body: `Hi ${cont?.name || "there"},\n\nFollowing up on my previous note. I prepared a brief 1-page overview of how streamlining system bottlenecks can eliminate delays for ${org?.name || "your team"}.\n\nWould you be open to a 5-minute chat this week?`,
+      },
+      simulated: true,
+      model: "free-tier-resilience-fallback",
+    });
   }
 });
 
@@ -681,22 +759,22 @@ app.post("/api/ai/content", async (req, res) => {
         data: {
           ideas: [
             {
-              title: "3 Costly Mistakes Universities Make When Deploying Student Management Software",
+              title: "3 Costly Mistakes Organizations Make When Deploying Management Software",
               contentType: "article",
               angle: "Technical breakdown of off-the-shelf vs modular architecture.",
-              draft: "When evaluating campus digitalization, leadership often buys oversized legacy ERPs that cost 5x more in maintenance than bespoke micro-services...",
+              draft: "When evaluating digitalization, leadership often buys oversized legacy ERPs that cost 5x more in maintenance than bespoke micro-services...",
             },
             {
-              title: "Case Breakdown: Cutting Enrollment Queue Times from 4 Hours to 6 Minutes",
+              title: "Case Breakdown: Cutting Process Queues from 4 Hours to 6 Minutes",
               contentType: "case_study",
-              angle: "Pragmatic metrics from a recent university portal upgrade.",
-              draft: "Last semester, we audited a 4,000-student faculty where registration queues wrapped around the registrar's office...",
+              angle: "Pragmatic metrics from a recent portal modernization project.",
+              draft: "Last semester, we audited a local organization where manual queues caused substantial operational delays...",
             },
             {
-              title: "Quick Checklist for Dean & IT Directors: Is Your Exam Portal Secure for 2026?",
+              title: "Quick Checklist for Decision Makers: Is Your Digital Infrastructure Ready for 2026?",
               contentType: "post",
-              angle: "Actionable 5-point security audit checklist.",
-              draft: "Before mid-term exams kick off, verify these 5 vulnerability points in your server configuration...",
+              angle: "Actionable 5-point security and workflow checklist.",
+              draft: "Before expanding operations, verify these 5 vulnerability points in your current workflow and server configuration...",
             },
           ],
         },
@@ -737,8 +815,28 @@ ${contentType ? `PREFERRED FORMAT: ${contentType}` : ""}`;
     const parsed = JSON.parse(text || "{}");
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
-    console.error("AI Content Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to generate content" });
+    console.warn("AI Content Error, using fallback generator:", error.message || error);
+    return res.json({
+      success: true,
+      data: {
+        ideas: [
+          {
+            title: "Overcoming Legacy Software Bottlenecks: A Blueprint for Growing Institutions",
+            contentType: "article",
+            angle: "Strategic guide on migrating legacy desktop tools into web-based automated workflows.",
+            draft: "Most mid-sized institutions lose up to 15 hours per employee each week to disconnected software and manual spreadsheet entry...",
+          },
+          {
+            title: "The Solo Engineer Advantage: High-Speed Software Delivery Without Corporate Overhead",
+            contentType: "post",
+            angle: "Positioning personalized consultancy against bloated agency retainers.",
+            draft: "Why agile institutions increasingly choose specialized boutique consultants over multi-layered agencies...",
+          },
+        ],
+      },
+      simulated: true,
+      model: "free-tier-resilience-fallback",
+    });
   }
 });
 
@@ -753,14 +851,17 @@ app.post("/api/ai/proposal", async (req, res) => {
         success: true,
         data: {
           proposalContent: `PROPOSAL: ${opportunity?.name || "Digital Transformation Solution"}\n\nPREPARED FOR: ${organization?.name || "Client Institution"}\nPREPARED BY: ${profile?.name || "Vane Digital Systems"}\n\n1. EXECUTIVE SUMMARY\n${organization?.name || "The institution"} requires a robust, scalable digital solution to streamline operations and eliminate manual friction.\n\n2. PROPOSED SOLUTION & SCOPE\n- Deployment of automated web portal and administrative ledger\n- Secure cloud infrastructure and staff training\n\n3. COMMERCIAL TERMS & TIMELINE\n- Total Investment: $${opportunity?.estimatedValue || 7500}\n- Delivery Timeline: 4-6 weeks\n- Payment Terms: 50% upfront deposit, 50% upon successful acceptance test.`,
+          problemSummary: `${organization?.name || "The client"} experiences manual bottlenecks and disjointed tracking.`,
+          proposedSolution: "Modular cloud portal with real-time tracking, role-based security, and automated workflows.",
           features: [
             "Online self-service portal with responsive UI",
             "Automated payment and transaction reconciliation",
             "Real-time administrative analytics dashboard",
             "Staff training and 60-day post-launch support"
           ],
-          timeline: "Week 1-2: Core DB & API Setup; Week 3-4: Portal UI; Week 5: Testing & Training; Week 6: Production Launch.",
+          timeline: "Week 1-2: Core Architecture; Week 3-4: Portal UI & Workflows; Week 5: Testing & Training; Week 6: Production Launch.",
           deliverables: ["Custom Web Application", "Admin Management Console", "User Documentation", "Deployment & Hosting Config"],
+          pricing: `$${(opportunity?.estimatedValue || 7500).toLocaleString()} fixed fee milestone schedule.`,
         },
         simulated: true,
       });
@@ -808,8 +909,29 @@ ${angle ? `SPECIAL FOCUS / ANGLE: ${angle}` : ""}`;
     const parsed = JSON.parse(text || "{}");
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
-    console.error("AI Proposal Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to generate proposal" });
+    console.warn("AI Proposal Error, using fallback generator:", error.message || error);
+    const opp = req.body.opportunity;
+    const org = req.body.organization;
+    const prof = req.body.profile;
+    return res.json({
+      success: true,
+      data: {
+        proposalContent: `PROPOSAL: ${opp?.name || "Digital Transformation Solution"}\n\nPREPARED FOR: ${org?.name || "Client Institution"}\nPREPARED BY: ${prof?.name || "Digital Engineering Consultancy"}\n\n1. EXECUTIVE SUMMARY\n${org?.name || "The client organization"} is scaling operations and requires an integrated web-based platform to replace fragmented manual processes.\n\n2. PROPOSED SOLUTION & SCOPE\n- Customized administrative interface with role-based security\n- Automated reporting and database synchronization\n- End-user training and system documentation\n\n3. TIMELINE & INVESTMENT\n- Estimated Value: $${(opp?.estimatedValue || 5000).toLocaleString()}\n- Project Duration: 4-6 weeks\n- Support: 60 days warranty and maintenance.`,
+        problemSummary: `Operational friction from disconnected manual records at ${org?.name || "the organization"}.`,
+        proposedSolution: "Bespoke, lightweight cloud management platform designed for speed and reliability.",
+        features: [
+          "Role-based administrative control panel",
+          "Automated activity logging and record dispatch",
+          "Responsive mobile-friendly client interface",
+          "Automated daily backup and security hardening"
+        ],
+        deliverables: ["Production Web Application", "Database Migration Scripts", "User & Admin Guides", "Deployment Verification"],
+        timeline: "Phase 1 (W1-2): System Architecture & Core DB; Phase 2 (W3-4): Feature Build & UI; Phase 3 (W5-6): Testing, Migration & Go-Live.",
+        pricing: `$${(opp?.estimatedValue || 5000).toLocaleString()} (50% inception, 50% completion).`,
+      },
+      simulated: true,
+      model: "free-tier-resilience-fallback",
+    });
   }
 });
 
@@ -823,7 +945,7 @@ app.post("/api/ai/command", async (req, res) => {
       return res.json({
         success: true,
         data: {
-          narrative: `Based on your current pipeline with ${crmSnapshot?.prospectsCount || 0} prospects and ${crmSnapshot?.activeOppsCount || 0} active opportunities, your highest priority today is following up with overdue leads. You have 2 follow-ups ready for dispatch.`,
+          narrative: `Based on your current pipeline with ${crmSnapshot?.prospectsCount || 0} prospects and ${crmSnapshot?.activeOppsCount || 0} active opportunities, your highest priority today is following up with overdue leads. You have active follow-ups ready for dispatch.`,
           actionChips: [
             { type: "START_SESSION", label: "Start Guided Session", target: "/session" },
             { type: "FOLLOW_UPS", label: "Open Follow-up Queue", target: "/outreach" },
@@ -872,8 +994,21 @@ Top Urgent Prospects: ${JSON.stringify(crmSnapshot?.topUrgent || [])}`;
     const parsed = JSON.parse(text || "{}");
     res.json({ success: true, data: parsed, model: modelUsed, fallbackOccurred });
   } catch (error: any) {
-    console.error("AI Command Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to process command" });
+    console.warn("AI Command Error, using fallback response:", error.message || error);
+    const snap = req.body.crmSnapshot;
+    return res.json({
+      success: true,
+      data: {
+        narrative: `You currently have ${snap?.prospectsCount || 0} prospects and ${snap?.activeOppsCount || 0} active deals in your pipeline. Focus on advancing high-probability discovery opportunities and sending planned follow-ups today.`,
+        actionChips: [
+          { type: "NAVIGATE", label: "Review Pipeline Deals", payload: { route: "pipeline" } },
+          { type: "NAVIGATE", label: "Open Outreach Hub", payload: { route: "outreach" } },
+          { type: "NAVIGATE", label: "Start Guided Session", payload: { route: "session" } },
+        ],
+      },
+      simulated: true,
+      model: "free-tier-resilience-fallback",
+    });
   }
 });
 

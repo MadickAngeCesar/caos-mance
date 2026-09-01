@@ -33,6 +33,7 @@ import {
   testGeminiApiKey,
   getGoogleMapsApiKey
 } from '../../lib/api';
+import { AVAILABLE_MODELS, getModelMeta } from '../../lib/models';
 
 interface SettingsViewProps {
   state: AppStoreState;
@@ -337,28 +338,46 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-                  Model Selection & Free-Tier Optimization Strategy
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
+                    Model Selection & Intelligence Strategy
+                  </label>
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                    {getModelMeta(modelPref).badge}
+                  </span>
+                </div>
                 <select
                   value={modelPref}
                   onChange={(e) => setModelPref(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-hidden cursor-pointer"
                 >
-                  <option value="auto">Auto (Recommended - Gemini 3.7 Flash & Fallbacks)</option>
-                  <option value="gemini-3.7-flash">Gemini 3.7 Flash (Default - High Speed & Deep Reasoning)</option>
-                  <option value="gemini-3.6-flash">Gemini 3.6 Flash (High Performance)</option>
-                  <option value="gemini-flash-latest">Gemini Flash Latest</option>
-                  <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Ultra-Low Latency)</option>
+                  {AVAILABLE_MODELS.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name} — [{model.badge}]
+                    </option>
+                  ))}
                 </select>
-                <div className="mt-2 p-2.5 rounded-md bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700/60 text-[11px] text-stone-600 dark:text-stone-400 space-y-1">
-                  <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                    <span>How Auto-Selection works:</span>
+
+                {/* Active Model Description and Guidelines */}
+                <div className="mt-2.5 p-3 rounded-lg bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700/60 text-[11px] text-stone-600 dark:text-stone-400 space-y-1.5">
+                  <div className="font-semibold text-stone-800 dark:text-stone-200 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span>{getModelMeta(modelPref).name}</span>
+                    </span>
+                    {getModelMeta(modelPref).freeTierFriendly && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                        Free-Tier Optimized
+                      </span>
+                    )}
                   </div>
-                  <p>
-                    CAOS queries Gemini 3.7 Flash first for peak research & copywriting quality. If rate-limits or quota restrictions are detected on a free-tier key, it gracefully cascades down to alternative models so your workflow never gets interrupted.
-                  </p>
+                  <p>{getModelMeta(modelPref).description}</p>
+                  {getModelMeta(modelPref).recommendedFor && (
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 pt-1 border-t border-stone-200/60 dark:border-stone-700/60">
+                      <span className="font-semibold text-stone-700 dark:text-stone-300">Recommended for: </span>
+                      {getModelMeta(modelPref).recommendedFor}
+                    </div>
+                  )}
                 </div>
               </div>
 

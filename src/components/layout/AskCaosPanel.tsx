@@ -13,7 +13,8 @@ import {
   Building2
 } from 'lucide-react';
 import { AppStoreState } from '../../lib/storage';
-import { requestCommand } from '../../lib/api';
+import { requestCommand, STORAGE_KEY_GEMINI_MODEL } from '../../lib/api';
+import { AVAILABLE_MODELS, getModelMeta } from '../../lib/models';
 import { AiMarking } from '../ui/AiMarking';
 
 interface AskCaosPanelProps {
@@ -45,6 +46,7 @@ export const AskCaosPanel: React.FC<AskCaosPanelProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentModel, setCurrentModel] = useState<string>('auto');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'm-welcome',
@@ -60,6 +62,20 @@ export const AskCaosPanel: React.FC<AskCaosPanelProps> = ({
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY_GEMINI_MODEL) || 'auto';
+      setCurrentModel(saved);
+    }
+  }, [isOpen]);
+
+  const handleModelChange = (newModel: string) => {
+    setCurrentModel(newModel);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY_GEMINI_MODEL, newModel);
+    }
+  };
 
   useEffect(() => {
     if (initialPrompt && isOpen) {
@@ -168,23 +184,43 @@ export const AskCaosPanel: React.FC<AskCaosPanelProps> = ({
         </button>
       </div>
 
-      {/* Context Scope Chip */}
-      <div className="px-4 py-2 bg-stone-100/60 dark:bg-stone-800/40 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500">
-        <span className="flex items-center gap-1.5 truncate">
-          <Tag className="w-3 h-3 text-stone-400 shrink-0" />
-          <span className="text-stone-400">Context:</span>
-          <span className="font-medium text-stone-700 dark:text-stone-200 truncate">
-            {contextAnchor ? `${contextAnchor.type}: ${contextAnchor.name}` : 'General Pipeline'}
+      {/* Context Scope & Model Selector Bar */}
+      <div className="px-4 py-2 bg-stone-100/60 dark:bg-stone-800/40 border-b border-stone-200 dark:border-stone-800 flex flex-col gap-1.5 text-xs text-stone-500">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 truncate">
+            <Tag className="w-3 h-3 text-stone-400 shrink-0" />
+            <span className="text-stone-400">Context:</span>
+            <span className="font-medium text-stone-700 dark:text-stone-200 truncate">
+              {contextAnchor ? `${contextAnchor.type}: ${contextAnchor.name}` : 'General Pipeline'}
+            </span>
           </span>
-        </span>
-        {contextAnchor && onClearContext && (
-          <button
-            onClick={onClearContext}
-            className="text-[11px] text-teal-600 dark:text-teal-400 hover:underline shrink-0"
+          {contextAnchor && onClearContext && (
+            <button
+              onClick={onClearContext}
+              className="text-[11px] text-teal-600 dark:text-teal-400 hover:underline shrink-0 cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between pt-1 border-t border-stone-200/50 dark:border-stone-700/50 text-[11px]">
+          <span className="text-stone-400 flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-purple-500" />
+            <span>Model:</span>
+          </span>
+          <select
+            value={currentModel}
+            onChange={(e) => handleModelChange(e.target.value)}
+            className="text-[11px] bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded px-1.5 py-0.5 text-stone-800 dark:text-stone-200 font-medium focus:outline-hidden focus:ring-1 focus:ring-purple-500 max-w-[200px] truncate cursor-pointer"
           >
-            Clear to General
-          </button>
-        )}
+            {AVAILABLE_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Conversation Area */}

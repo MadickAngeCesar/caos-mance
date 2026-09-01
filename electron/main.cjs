@@ -12,8 +12,12 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 880,
-    minWidth: 1024,
-    minHeight: 680,
+    minWidth: 800,
+    minHeight: 520,
+    resizable: true,
+    minimizable: true,
+    maximizable: true,
+    fullscreenable: true,
     title: 'CAOS - Client Acquisition & Outreach System',
     icon: hasIcon ? iconPath : undefined,
     backgroundColor: '#0c0a09',
@@ -74,6 +78,15 @@ app.on('window-all-closed', () => {
 // IPC Communication Handlers
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:platform', () => process.platform);
+ipcMain.handle('app:getEnv', () => ({
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '',
+  API_URL: process.env.CAOS_API_URL || process.env.APP_URL || '',
+  NODE_ENV: process.env.NODE_ENV || (app.isPackaged ? 'production' : 'development'),
+}));
+ipcMain.handle('window:isMaximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
+});
 ipcMain.handle('window:minimize', () => {
   if (mainWindow) mainWindow.minimize();
 });

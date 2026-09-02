@@ -11,26 +11,27 @@ function startBackend() {
   const serverPath = path.join(__dirname, '../dist/server.cjs');
   if (fs.existsSync(serverPath)) {
     console.log('Starting backend server from:', serverPath);
-    backendProcess = spawn('node', [serverPath], {
-      stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'production' },
-    });
-    backendProcess.on('error', (err) => {
+    try {
+      // Set production environment before requiring
+      process.env.NODE_ENV = 'production';
+      // Provide an override for the frontend API URL so it targets the local server
+      process.env.CAOS_API_URL = 'http://localhost:3000';
+      require(serverPath);
+    } catch (err) {
       console.error('Failed to start backend server:', err);
-    });
+    }
   } else {
     console.error('Backend server not found at:', serverPath);
   }
 }
 
 function stopBackend() {
-  if (backendProcess) {
-    backendProcess.kill();
-  }
+  // Since the server runs in the main Electron process now, it will exit when the app exits.
+  // We don't need to manually kill a child process.
 }
 
 function createWindow() {
-  const iconPath = path.join(__dirname, '../public/mac_tech_logo.svg');
+  const iconPath = path.join(__dirname, '../public/mac_tech_logo.png');
   const hasIcon = fs.existsSync(iconPath);
 
   mainWindow = new BrowserWindow({

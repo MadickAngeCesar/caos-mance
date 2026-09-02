@@ -35,7 +35,9 @@
       "target": [
         "nsis",
         "portable"
-      ]
+      ],
+      "icon": "public/mac_tech_logo.png",
+      "publisherName": "MAC TECH"
     },
     "mac": {
       "target": [
@@ -43,7 +45,7 @@
         "zip"
       ],
       "category": "public.app-category.business",
-      "icon": "public/mac_tech_logo.svg"
+      "icon": "public/mac_tech_logo.png"
     },
     "linux": {
       "target": [
@@ -51,7 +53,7 @@
         "deb"
       ],
       "category": "Office",
-      "icon": "public/mac_tech_logo.svg"
+      "icon": "public/mac_tech_logo.png"
     }
   },
   "dependencies": {

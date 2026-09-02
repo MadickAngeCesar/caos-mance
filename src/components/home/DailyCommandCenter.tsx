@@ -73,9 +73,9 @@ export const DailyCommandCenter: React.FC<DailyCommandCenterProps> = ({
             {!isEditingTime ? (
               <button
                 onClick={() => setIsEditingTime(true)}
-                className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 px-3 py-1.5 rounded-md shadow-xs border border-stone-200 dark:border-stone-700 inline-flex items-center gap-1 cursor-pointer transition-colors"
               >
-                [Adjust]
+                Adjust Time
               </button>
             ) : (
               <form onSubmit={handleTimeSubmit} className="inline-flex items-center gap-2">

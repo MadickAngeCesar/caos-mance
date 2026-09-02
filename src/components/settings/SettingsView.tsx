@@ -768,16 +768,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900/60 p-6 space-y-3">
             <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
               <ShieldAlert className="w-5 h-5" />
-              <h4 className="text-sm font-semibold">Reset to Default Seed Data</h4>
+              <h4 className="text-sm font-semibold">Reset to Default</h4>
             </div>
             <p className="text-xs text-stone-600 dark:text-stone-400">
-              Restores initial Cameroon higher education prospect data (University of Douala, PKFokam, etc.).
+              Clears all prospects, deals, activities, and tasks, providing a clean slate. Your profile and settings will be preserved.
             </p>
             <button
               onClick={() => setShowResetConfirm(true)}
               className="px-4 py-1.5 text-xs font-semibold rounded bg-red-600 hover:bg-red-700 text-white shadow-xs cursor-pointer"
             >
-              Reset to Factory Seed
+              Reset Database
             </button>
           </div>
         </div>
@@ -787,7 +787,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <ConfirmDialog
         isOpen={showResetConfirm}
         title="Reset Entire CAOS Database?"
-        description="This will replace all local organizations, deals, and activities with the original factory seed data."
+        description="This will permanently delete all organizations, deals, contacts, and activities."
         confirmLabel="Reset Data"
         variant="destructive"
         requireTypedName="RESET"

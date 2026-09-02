@@ -143,7 +143,7 @@ export default function App() {
   // 1. Organization Management
   const handleAddOrg = (newOrgData: Partial<Organization>) => {
     const newOrg: Organization = {
-      id: `org-${Date.now()}`,
+      id: `org-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: newOrgData.name || 'New Organization',
       organizationType: newOrgData.organizationType || 'Private University',
       city: newOrgData.city,

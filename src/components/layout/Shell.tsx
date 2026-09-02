@@ -16,7 +16,7 @@ import {
   Clock, 
   Cpu
 } from 'lucide-react';
-import { AppStoreState } from '../../lib/storage';
+import { AppStoreState, generateDailyPlan } from '../../lib/storage';
 import { MacTechLogo } from '../ui/MacTechLogo';
 import { STORAGE_KEY_GEMINI_API, STORAGE_KEY_GEMINI_MODEL } from '../../lib/api';
 
@@ -43,9 +43,23 @@ export const Shell: React.FC<ShellProps> = ({
   onToggleAskCaos,
   children,
 }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
   const [hasCustomKey, setHasCustomKey] = useState(false);
   const [selectedModel, setSelectedModel] = useState('auto');
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarCollapsed(true);
+      } else {
+        setIsSidebarCollapsed(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -55,6 +69,11 @@ export const Shell: React.FC<ShellProps> = ({
       setSelectedModel(mod);
     }
   }, [currentRoute]);
+
+  const plannedList = generateDailyPlan(state, state.todayTimeBudgetMinutes);
+  const hours = Math.floor(state.todayTimeBudgetMinutes / 60);
+  const mins = state.todayTimeBudgetMinutes % 60;
+  const timeFormatted = `${hours}h ${mins > 0 ? `${mins}m` : ''}`;
 
   // Progressive disclosure: Opportunities item only rendered when at least 1 opportunity exists
   const hasOpportunities = state.opportunities.length > 0;
@@ -228,13 +247,16 @@ export const Shell: React.FC<ShellProps> = ({
               <div className="px-3 py-2.5 rounded-lg bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700/50">
                 <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 mb-1">
                   <span>Today's Target</span>
-                  <span className="font-mono text-teal-600 dark:text-teal-400 font-semibold">2h 30m</span>
+                  <span className="font-mono text-teal-600 dark:text-teal-400 font-semibold">{timeFormatted}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-stone-200 dark:bg-stone-700 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-teal-600 h-full w-2/5 rounded-full" />
+                    <div 
+                      className="bg-teal-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (state.streakCount > 0 ? (1 / plannedList.length || 1) * 100 : 0))}%` }} 
+                    />
                   </div>
-                  <span className="text-[11px] font-mono text-stone-500 dark:text-stone-400">2/6</span>
+                  <span className="text-[11px] font-mono text-stone-500 dark:text-stone-400">{plannedList.length} items</span>
                 </div>
               </div>
             ) : null}
@@ -250,7 +272,7 @@ export const Shell: React.FC<ShellProps> = ({
         </aside>
 
         {/* Main Content Viewport (Centered, scrollable, max-w-1280px) */}
-        <main className="flex-1 overflow-y-auto min-w-0 h-full bg-stone-100/50 dark:bg-stone-950 p-6 lg:p-8 relative">
+        <main className="flex-1 overflow-y-auto min-w-0 h-full bg-stone-100/50 dark:bg-stone-950 p-3 sm:p-6 lg:p-8 relative">
           <div className="max-w-7xl mx-auto min-w-0">
             {children}
           </div>

@@ -50,14 +50,22 @@ interface ProspectDiscoveryModalProps {
 
 // Preset industry options
 const INDUSTRY_PRESETS = [
-  { id: 'Higher Education', label: 'Higher Education & Universities', defaultQuery: 'Private university college institute', color: '#0d9488' },
-  { id: 'Healthcare', label: 'Hospitals & Specialized Clinics', defaultQuery: 'Private hospital medical clinic polyclinic', color: '#059669' },
-  { id: 'Logistics', label: 'Logistics, Freight & Transport', defaultQuery: 'Freight forwarding logistics transport company', color: '#d97706' },
-  { id: 'Finance', label: 'Microfinance & Financial Services', defaultQuery: 'Microfinance institution credit union financial services', color: '#2563eb' },
-  { id: 'Legal & Consulting', label: 'Law & Corporate Advisory', defaultQuery: 'Law firm legal cabinet corporate advisory', color: '#7c3aed' },
-  { id: 'Manufacturing', label: 'Manufacturing & Distribution', defaultQuery: 'Manufacturing plant industrial distribution', color: '#4b5563' },
-  { id: 'Hospitality', label: 'Hotels & Event Centers', defaultQuery: 'Hotel resort conference event center', color: '#e11d48' },
-  { id: 'Custom', label: 'Custom / Other Industry', defaultQuery: '', color: '#0d9488' },
+  { id: 'Finance', label: 'Finance (Banques, microfinance & credit)', defaultQuery: 'Banque microfinance credit institute', color: '#2563eb' },
+  { id: 'Assurance', label: 'Assurance', defaultQuery: 'Assurance insurance company', color: '#0ea5e9' },
+  { id: 'Telecom', label: 'Telecommunication & Numerique', defaultQuery: 'Telecommunication tech numerique IT company', color: '#8b5cf6' },
+  { id: 'Energy', label: 'Energie', defaultQuery: 'Energie solar power company', color: '#f59e0b' },
+  { id: 'Agro', label: 'Agro-Industrie', defaultQuery: 'Agro-industrie agriculture farm', color: '#10b981' },
+  { id: 'Nutrition', label: 'Nutrition', defaultQuery: 'Nutrition food production supplement', color: '#84cc16' },
+  { id: 'Transport', label: 'Transport', defaultQuery: 'Transport logistics transit', color: '#d97706' },
+  { id: 'Hospitality', label: 'Hotelery + Restaurant + Tourisme', defaultQuery: 'Hotel restaurant tourisme resort', color: '#e11d48' },
+  { id: 'Media', label: 'Media + Communication', defaultQuery: 'Media communication agency press', color: '#6366f1' },
+  { id: 'Health', label: 'Health', defaultQuery: 'Hospital clinic health center pharmacy', color: '#059669' },
+  { id: 'Firms', label: 'Firms (Consulting/Legal)', defaultQuery: 'Consulting firm law legal cabinet', color: '#7c3aed' },
+  { id: 'Commerce', label: 'Commerce + Distribution', defaultQuery: 'Commerce distribution retail wholesale', color: '#f43f5e' },
+  { id: 'Public', label: 'Public Enterprise', defaultQuery: 'Public enterprise state corporation', color: '#64748b' },
+  { id: 'RealEstate', label: 'Real Estate', defaultQuery: 'Real estate property developer agency', color: '#14b8a6' },
+  { id: 'Education', label: 'Education & Training', defaultQuery: 'University school training institute', color: '#0d9488' },
+  { id: 'Custom', label: 'Other', defaultQuery: '', color: '#0d9488' },
 ];
 
 export const ProspectDiscoveryModal: React.FC<ProspectDiscoveryModalProps> = ({

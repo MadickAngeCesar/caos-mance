@@ -834,20 +834,20 @@ export function calculateLeadScore(org: Partial<Organization>, contacts: Contact
 export function resetStoreToSeed(): AppStoreState {
   const seedState: AppStoreState = {
     profile: defaultFreelanceProfile,
-    organizations: defaultOrganizations,
-    contacts: defaultContacts,
-    opportunities: defaultOpportunities,
-    activities: defaultActivities,
-    tasks: defaultTasks,
-    contentItems: defaultContentItems,
+    organizations: [],
+    contacts: [],
+    opportunities: [],
+    activities: [],
+    tasks: [],
+    contentItems: [],
     playbooks: defaultPlaybooks,
     sequences: [defaultSequence],
-    sequenceStepInstances: defaultSequenceStepInstances,
+    sequenceStepInstances: [],
     customFields: defaultCustomFields,
     sessions: [],
     activeSession: null,
     todayTimeBudgetMinutes: 150,
-    streakCount: 5,
+    streakCount: 0,
   };
   saveStore(seedState);
   return seedState;

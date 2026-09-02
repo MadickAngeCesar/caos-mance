@@ -342,6 +342,7 @@ export const ProspectDiscoveryModal: React.FC<ProspectDiscoveryModalProps> = ({
       leadScore: p.estimatedLeadScore || 70,
       notes: `Discovered via ${p.source.toUpperCase()} Radar.\n\nRecommended Angle: ${p.recommendedAngle || 'Digitalization and portal modernization.'}\n\nPain Points: ${(p.keyPainPoints || []).join('; ')}`,
       tags: ['Radar Sourced', p.industry || 'Tech'].filter(Boolean),
+      contacts: (p as any).contacts || [],
     }));
 
     onImportProspects(orgsToCreate, autoResearch);

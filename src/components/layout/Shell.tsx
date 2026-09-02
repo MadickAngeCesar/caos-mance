@@ -17,7 +17,6 @@ import {
   Cpu
 } from 'lucide-react';
 import { AppStoreState, generateDailyPlan } from '../../lib/storage';
-import { MacTechLogo } from '../ui/MacTechLogo';
 import { STORAGE_KEY_GEMINI_API, STORAGE_KEY_GEMINI_MODEL } from '../../lib/api';
 
 interface ShellProps {
@@ -109,7 +108,7 @@ export const Shell: React.FC<ShellProps> = ({
             className="flex items-center gap-2 cursor-pointer group select-none"
             title="MAC TECH - CAOS (Client Acquisition Operating System)"
           >
-            <MacTechLogo className="h-7 w-7 transition-transform group-hover:scale-105" />
+            <img src="/mac_tech_logo.png" className="h-7 w-7 object-contain transition-transform group-hover:scale-105" alt="MAC TECH" />
             <div className="flex items-center gap-1.5 hidden sm:flex">
               <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-stone-100">
                 CAOS

@@ -159,9 +159,27 @@ export default function App() {
     };
     newOrg.leadScore = calculateLeadScore(newOrg, []);
 
+    // Handle optional contacts passed from discovery
+    let newContacts: Contact[] = [];
+    if ((newOrgData as any).contacts && Array.isArray((newOrgData as any).contacts)) {
+      newContacts = (newOrgData as any).contacts.map((c: any) => ({
+        id: `cnt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        organizationId: newOrg.id,
+        name: c.name || 'Decision Maker',
+        role: c.role || 'Executive',
+        email: c.email || '',
+        phone: c.phone || '',
+        isPrimary: true,
+        customFields: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+    }
+
     updateState((prev) => ({
       ...prev,
       organizations: [newOrg, ...prev.organizations],
+      contacts: [...newContacts, ...prev.contacts],
       activities: [
         {
           id: `act-${Date.now()}`,

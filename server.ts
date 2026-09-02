@@ -394,6 +394,14 @@ Return a STRICT JSON array matching this exact schema:
       "recommendedAngle": "Specific pitch angle tailored to this prospect and the consultant's capabilities",
       "estimatedLeadScore": 82,
       "suggestedNextStep": "Specific outreach step",
+      "contacts": [
+        {
+          "name": "Full Name",
+          "role": "e.g. IT Director, Managing Partner, Head of Dept",
+          "email": "placeholder email",
+          "phone": "placeholder phone"
+        }
+      ],
       "latitude": 3.8480,
       "longitude": 11.5021
     }
@@ -433,6 +441,7 @@ Return a STRICT JSON array matching this exact schema:
       recommendedAngle: p.recommendedAngle || "Offer modern portal modernization with automated registration.",
       estimatedLeadScore: p.estimatedLeadScore || Math.floor(70 + Math.random() * 25),
       suggestedNextStep: p.suggestedNextStep || "Initiate consultative outreach to Director of IT / Managing Partner.",
+      contacts: p.contacts || [],
       latitude: p.latitude || undefined,
       longitude: p.longitude || undefined,
       source: "gemini" as const,
@@ -649,10 +658,10 @@ Strictly adhere to:
 - No pushy sales jargon ("supercharge", "synergy", "game-changer").
 - Sound like a respected, pragmatic technical peer.
 - Channel constraints:
-  * Email: include a sharp subject line and 3-paragraph body.
-  * WhatsApp / SMS: friendly, concise (under 80 words), clear single question CTA.
+  * Email: include a sharp subject line and 3-paragraph body. Use Markdown spacing if appropriate.
+  * WhatsApp / SMS: friendly, concise (under 80 words), clear single question CTA. MUST use WhatsApp markdown (e.g., *bold*, _italic_, ~strikethrough~) for emphasis.
   * LinkedIn: personalized connection/inMail note, reference specific mutual context.
-  * Phone Script: conversational talking points and hook.
+  * Formal Institutional Letter: professional formatting, clear formal salutations.
 Output JSON: { "subject": string (optional), "body": string, "hookReason": string }`;
 
     const prompt = `PROSPECT & CONTACT:

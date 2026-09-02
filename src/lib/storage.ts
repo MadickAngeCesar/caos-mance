@@ -171,6 +171,21 @@ export const defaultPlaybooks: Playbook[] = [
     examples: [],
     version: 1,
     isActive: true,
+  },
+  {
+    id: "pb-followup-proposal-1",
+    name: "Follow-up & Business Proposal",
+    workflowType: "outreach",
+    instructions: "Draft a concise follow-up message summarizing the value proposition or generate a structured proposal outline. Focus on clear ROI, pricing transparency, and the exact next technical steps.",
+    tone: "Professional, confident, structured",
+    rulesToFollow: [
+      "Keep intro short. Move immediately into the proposed solution.",
+      "Include a clear call to action (e.g., a specific date/time for review)."
+    ],
+    thingsToAvoid: ["Do not be overly pushy or use complex technical jargon unless pre-qualified."],
+    examples: [],
+    version: 1,
+    isActive: true,
   }
 ];
 
@@ -771,6 +786,22 @@ export function generateDailyPlan(state: AppStoreState, availableMinutes: number
   return plan;
 }
 
+function deduplicateById<T extends { id: string }>(items: T[]): T[] {
+  if (!items || !Array.isArray(items)) return [];
+  const seen = new Set<string>();
+  return items.filter(item => {
+    if (!item || !item.id) return true; // fallback
+    if (seen.has(item.id)) {
+      // If we encounter a duplicate, we should ideally assign a new ID to not lose data
+      // but to strictly fix the React key error, we can just return false.
+      // Wait, if it's the exact same object from a race condition (e.g. same import row), dropping it is correct!
+      return false;
+    }
+    seen.add(item.id);
+    return true;
+  });
+}
+
 // Storage Load / Save
 export function loadStore(): AppStoreState {
   try {
@@ -779,17 +810,24 @@ export function loadStore(): AppStoreState {
       const parsed = JSON.parse(raw);
       return {
         profile: parsed.profile || defaultFreelanceProfile,
-        organizations: parsed.organizations || defaultOrganizations,
-        contacts: parsed.contacts || defaultContacts,
-        opportunities: parsed.opportunities || defaultOpportunities,
-        activities: parsed.activities || defaultActivities,
-        tasks: parsed.tasks || defaultTasks,
-        contentItems: parsed.contentItems || defaultContentItems,
-        playbooks: parsed.playbooks || defaultPlaybooks,
-        sequences: parsed.sequences || [defaultSequence],
-        sequenceStepInstances: parsed.sequenceStepInstances || defaultSequenceStepInstances,
-        customFields: parsed.customFields || defaultCustomFields,
-        sessions: parsed.sessions || [],
+        organizations: deduplicateById(parsed.organizations || defaultOrganizations),
+        contacts: deduplicateById(parsed.contacts || defaultContacts),
+        opportunities: deduplicateById(parsed.opportunities || defaultOpportunities),
+        activities: deduplicateById(parsed.activities || defaultActivities),
+        tasks: deduplicateById(parsed.tasks || defaultTasks),
+        contentItems: deduplicateById(parsed.contentItems || defaultContentItems),
+        playbooks: deduplicateById(
+          (parsed.playbooks || []).length > 0
+            ? [
+                ...parsed.playbooks,
+                ...defaultPlaybooks.filter(dp => !parsed.playbooks.some((pp: any) => pp.id === dp.id))
+              ]
+            : defaultPlaybooks
+        ),
+        sequences: deduplicateById(parsed.sequences || [defaultSequence]),
+        sequenceStepInstances: deduplicateById(parsed.sequenceStepInstances || defaultSequenceStepInstances),
+        customFields: deduplicateById(parsed.customFields || defaultCustomFields),
+        sessions: deduplicateById(parsed.sessions || []),
         activeSession: parsed.activeSession || null,
         todayTimeBudgetMinutes: parsed.todayTimeBudgetMinutes || 150,
         streakCount: parsed.streakCount || 5,

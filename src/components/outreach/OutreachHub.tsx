@@ -418,6 +418,48 @@ export const OutreachHub: React.FC<OutreachHubProps> = ({
                 )}
 
                 {/* 3-part AI marking with fade-out on edit */}
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-stone-200 dark:border-stone-700/50">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const prefix = channel === 'whatsapp' ? '*' : '**';
+                      setGeneratedDraft(prev => prev + ` ${prefix}bold text${prefix} `);
+                      setIsUserEdited(true);
+                    }}
+                    className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-400 font-serif font-bold text-sm"
+                    title="Bold"
+                  >
+                    B
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const prefix = channel === 'whatsapp' ? '_' : '*';
+                      setGeneratedDraft(prev => prev + ` ${prefix}italic text${prefix} `);
+                      setIsUserEdited(true);
+                    }}
+                    className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-400 font-serif italic text-sm"
+                    title="Italic"
+                  >
+                    I
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const prefix = channel === 'whatsapp' ? '~' : '~~';
+                      setGeneratedDraft(prev => prev + ` ${prefix}strikethrough${prefix} `);
+                      setIsUserEdited(true);
+                    }}
+                    className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-400 font-serif line-through text-sm"
+                    title="Strikethrough"
+                  >
+                    S
+                  </button>
+                  <div className="w-px h-4 bg-stone-300 dark:bg-stone-600 mx-1" />
+                  <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+                    {channel === 'whatsapp' ? 'WhatsApp Formatting Active' : 'Email Markdown Active'}
+                  </span>
+                </div>
                 <AiMarking isAiMarked={!isUserEdited}>
                   <textarea
                     rows={12}

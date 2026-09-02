@@ -1,9 +1,33 @@
 const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 let mainWindow = null;
+let backendProcess = null;
+
+function startBackend() {
+  const serverPath = path.join(__dirname, '../dist/server.cjs');
+  if (fs.existsSync(serverPath)) {
+    console.log('Starting backend server from:', serverPath);
+    backendProcess = spawn('node', [serverPath], {
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production' },
+    });
+    backendProcess.on('error', (err) => {
+      console.error('Failed to start backend server:', err);
+    });
+  } else {
+    console.error('Backend server not found at:', serverPath);
+  }
+}
+
+function stopBackend() {
+  if (backendProcess) {
+    backendProcess.kill();
+  }
+}
 
 function createWindow() {
   const iconPath = path.join(__dirname, '../public/mac_tech_logo.svg');
@@ -60,6 +84,7 @@ function createWindow() {
 
 // Application Lifecycle
 app.whenReady().then(() => {
+  startBackend();
   createWindow();
 
   app.on('activate', () => {
@@ -70,6 +95,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  stopBackend();
   if (process.platform !== 'darwin') {
     app.quit();
   }

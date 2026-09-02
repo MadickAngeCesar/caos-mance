@@ -13,12 +13,6 @@ export const MacTechLogo: React.FC<MacTechLogoProps> = ({
 }) => {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      <img
-        src="/mac_tech_logo.svg"
-        alt="MAC TECH - Madick Ange César"
-        className="h-full w-auto object-contain shrink-0 drop-shadow-xs"
-        style={size ? { width: size, height: size } : undefined}
-      />
       {showText && (
         <div className="flex flex-col text-left leading-tight">
           <div className="flex items-center gap-1">
